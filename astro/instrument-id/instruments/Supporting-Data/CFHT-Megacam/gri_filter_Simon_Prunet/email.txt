@@ -1,0 +1,59 @@
+was having problems calibrating the P2010V1 images for gri.
+
+I contacted Simon Prunet at CFHT and he graciously computed a transformation from
+g,r,i to  gri_AB  that seems to work very accurately for all 131 classes of Pickles stellar spectra.
+
+This will allow valid AB calibration of any megacam gri images given an SDSS or 
+PS1 catalog.
+
+This is the formula, simplified
+
+   F_g := 0.01551 10^(-0.4*g)  ;; catalog sdss AB g to flux
+   F_r := 0.01400 10^(-0.4*r)  ;; catalog sdss AB r to flux
+   F_i := 0.01020 10^(-0.4*i)  ;; catalog sdss AB i to flux
+
+   Fgri := 1.5256 * F_g +  1.5969 * F_r +  0.7877 * F_i   ;; gri flux
+   MagAB_gri= -2.5 log10(Fgri/0.05392)  ;; desired true AB gri mag of catalog star
+  
+
+The other direction, going from calibrated gri to r-band object magnitude, is still undefined, and would require
+assumptions about an object’s spectrum, but that would be true about inferring (eg) g from r.
+
+We should remember to put Simon in the acknowledgements.
+
+Jan
+
+
+
+On Jan 15, 2016, at 4:03 PM, Simon Prunet <prunet@cfht.hawaii.edu> wrote:
+
+Hi Jan,
+
+below are some results for a decomposition of the flux F_gri in to F_g, F_r, F_i. 
+(where g,r,i use the SDSS 2.5m transmission spectra)
+
+Fitting a linear model on synthetic fluxes using Pickles spectra, I get the following decomposition:
+
+F_gri =   1.5256 * F_g +  1.5969 * F_r +  0.7877 * F_i
+
+These fluxes can be derived from the AB magnitudes by:
+F_b = F_b(ref) x 10^(-0.4*m_b) 
+where m_b is the AB magnitude in the band b, and F_b(ref) = \int \lambda T_b(\lambda) S_AB(\lambda) d\lambda.
+
+The values of F_b(ref) are respectively:
+0.05392, 0.01551, 0.01400, 0.01020 
+for gri, g_sdss, r_sdss, i_sdss. These flux are in arbitrary (but identical !) units, so they can be used in the equations above to 
+predict gri AB magnitudes from SDSS g, r, i AB magnitudes.
+
+I attach a few figures, the first one gives the gri transmission, as well as the SDSS g,r,i transmissions (these include in principle all the optics + atmosphere).
+
+The second and third figure give F_gri (dark blue line), the above linear fit (magenta) and its decomposition in terms of weighted F_g (red), F_r(green) and F_i(cyan)
+for all stars in the Pickles library.
+
+The third gives the fit residuals.
+
+Let me know if this addresses your problem, or if you need me to compute other quantities.
+
+Best regards,
+
+	Simon

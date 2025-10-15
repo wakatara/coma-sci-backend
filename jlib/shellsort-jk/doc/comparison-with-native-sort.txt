@@ -1,0 +1,35 @@
+Comparison of SBCL builtin sort to shellsort, using
+random unsigned-byte 32 array of length NVEC
+
+================================================================
+ COMPARISON COUNT VS THEORETICAL
+     theoretical = (log (factorial n) 2)
+================================================================
+NVEC          SHELLSORT       BUILTIN SORT
+10	      1.11 	      1.77
+10^2	      1.36	      1.96
+10^3	      1.51	      1.98
+10^4	      1.60	      1.99
+10^5	      1.67	      1.99
+10^6	      1.72	      1.99
+11^7	      1.75	      1.99
+10^8          1.78	      1.99
+
+
+
+
+================================================================
+                SPEED
+   (run times for random vectors with unique elements)
+not normalized for number of iterations, so values can decrease
+with increasing NVEC; only varies across columns can be compared)
+==================================================================
+NVEC          SHELLSORT-MACRO  SHELLSORT-FUNC    BUILTIN SORT
+10	      0.023	       0.074		 0.14
+10^2	      0.65	       1.56		 3.15
+10^3	      10.05	       24.55		 48.1
+10^4	      1.59             3.80		 6.58
+10^5	      2.07	       5.16		 8.40
+10^6	      8.51	       21.16		 33.38
+10^7          43.425	       100.8		 164.0
+

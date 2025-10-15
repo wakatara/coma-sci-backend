@@ -1,0 +1,62 @@
+  
+(asdf:defsystem instrument-id
+  :depends-on (cfitsio astro-time ra-dec precess string-utils jk-parse-float)
+  :components 
+  ((:file "instrument-id-package" :depends-on ())
+   (:file "utils" :depends-on ("instrument-id-package"))
+   (:file "instrument-id" :depends-on ("instrument-id-package" "utils"))
+   (:file "mosaic-extract" :depends-on ("instrument-id-package" "utils" "instrument-id"))
+   (:file "standard-headers" :depends-on ("instrument-id-package" "instrument-id"))
+   ;;
+   (:module "instruments"
+    :pathname "instruments"
+    :depends-on ("instrument-id-package" "instrument-id" "utils")
+    :components ((:file "generic-onechip")
+		 (:file "cfht-megacam")
+		 (:file "hct-hfosc")
+		 (:file "lowell-prism")
+		 (:file "lowell-31-direct-ccd")
+		 (:file "lowell-107m-rca-320x512")
+		 (:file "lowell-perkins-loral-2k")
+		 (:file "lowell-perkins-tek-2k")
+		 (:file "subaru-focas")
+		 (:file "subaru-suprime-cam")
+		 (:file "subaru-hypersuprime-cam")
+		 (:file "subaru-hypersuprime-cam-hscpipe") ;; HSC reduced with HSCPIPE
+		 (:file "uh88-tek")
+		 (:file "uh88-gec")
+		 (:file "uh88-snifs-imager")
+		 (:file "uh88-OPTIC")
+		 (:file "calar-alto-dlr-mkiii")
+		 (:file "direct-site2k-1")
+		 (:file "dct-lmi")
+		 (:file "gemini-gmos")
+		 (:file "trappist")
+		 (:file "vlt-fors1+2")
+		 (:file "ps1-chip-stamp") ;; a PS1 chip stamp
+		 (:file "Lijiang-GMG24-YFOSC_YSU")
+		 (:file "uh-8k-mosaic")
+		 (:file "danish-154-DFOSC-ESO")
+		 (:file "keck-lris")
+		 (:file "ctio-old-cameras")
+		 (:file "kpno-old-cameras")
+		 (:file "kpno-mosaic") 
+		 (:file "cfht-focam")
+		 (:file "mcdonald-08m-pfc")
+		 (:file "tng-dolores")
+		 (:file "mt-bigelow-61-lpl-ti-chip1")
+		 (:file "lbt-lbc")
+		 (:file "wise-40in-site-ccd")
+		 (:file "magellan-imacs")
+		 (:file "hst-wfc3")
+		 (:file "wht-acam")
+		 (:file "esa-ogs-esadc2")
+		 (:file "ctio-decam")
+		 (:file "atlas")
+		 (:file "NOT-alfosc")
+		 
+		 (:file "misc-unhandled-cameras")
+		 ))
+   ;;
+   ))
+ 

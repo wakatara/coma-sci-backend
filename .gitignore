@@ -1,0 +1,6 @@
+SYSTEM-DATA
+*.o
+*~
+#*
+*.fasl
+dynamic-libraries

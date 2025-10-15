@@ -1,0 +1,23 @@
+
+The files
+
+ waaf-cffi.asd
+ waaf-cffi.lisp
+ waaf-cffi-tests.asd     
+ waaf-cffi-tests.lisp    
+
+
+are placed in the public domain in jurisdictions where such release is
+permitted.
+
+In jurisdictions where public domain is not permitted or does not
+exist, they are released under the Gnu Lesser Public License described
+in gpl-3.0.txt and are Copyright (c) 2010 JT KLEIN 
+
+
+
+
+
+
+contact: JT KLEIN
+         j e t m o n k <at> g m a i l <dot> c o m

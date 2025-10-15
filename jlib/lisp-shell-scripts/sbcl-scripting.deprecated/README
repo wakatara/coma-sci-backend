@@ -1,0 +1,15 @@
+
+A framework for scripts in SBCL.
+
+A /bin/sh script (sbcl-shell-script-example) runs
+a Lisp file  (sbcl-shell-script-example.lisp) in the same
+directory.
+
+The environment variable $SBCL determines which sbcl to use,
+reverting to `which sbcl` if not set.
+
+In the Lisp file, (load-user-init) optionally load's the user's
+.sbclrc, and *script-name* is set to the name of the Lisp source
+script, and *script-arguments* is a list of command line arguments.
+
+

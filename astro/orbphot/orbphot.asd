@@ -1,0 +1,21 @@
+
+
+#|
+
+Package for automated photometry on moving objects
+
+(orbphot:do-auto-phot fits-file)  looks up the OBJECT name
+in a fits file, gets the orbit from MPC, and computes
+sextractor photometry.
+
+It expects PHOT-CALIB headers for the zeropoint, and uses 
+the INSTRUMENT-ID package to get the mjd, object name, 
+and observatory. 
+
+|#
+
+(asdf:defsystem orbphot
+  :depends-on (terapix cfitsio slalib-ephem astro-coords
+	       imutils bordeaux-threads instrument-id mpc)
+  :components 
+  ((:file "orbphot" :depends-on ()))) 

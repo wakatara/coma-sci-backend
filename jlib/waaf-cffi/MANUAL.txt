@@ -1,0 +1,501 @@
+
+                          WAAF-CFFI - easily pass Lisp arrays to foreign data
+
+
+CONTENTS
+
+   - INTRODUCTION - The WAAF package allows you to pass arrays to
+       foreign functions with automatic allocation, copying, and
+       deallocation
+
+   - WITH-ARRAY-AS-FOREIGN-POINTER - A macro to allocate foreign
+       memory, copy array data to it, bind a pointer to it, execute a
+       body, copy the foreign data back to the Lisp array, and free
+       the memory.
+
+   - WITH-ARRAYS-AS-FOREIGN-POINTERS - A verson of
+       WITH-ARRAY-AS-FOREIGN-POINTER for several arrays in parallel.
+ 
+   - SBDEFINE-ALIEN-ROUTINE - Define foreign functions in the SBCL style
+       with Lisp values being optionally turned into pointers.
+
+   - WITH-LISP-VALUES-AS-FOREIGN-POINTERS - A macro to turn Lisp
+       values into foreign pointers of specified types, evaluable a
+       macro body, deallocate the pointers, and return the new values
+       in the pointers.
+
+   - EXPORTED VARIABLES AND TYPES - A set of type exported definitions 
+       that allow one to make Lisp arrays of specified foreign types.
+
+   - NOTE ON ALLOCATING ARRAYS OF POINTERS IN LISP - How to store foreign
+       pointers in Lisp arrays.
+
+
+================================================================
+
+INTRODUCTION
+
+WAFF-CFFI (With Array As Foreign) is a set of macros and copying
+functions designed to work with CFFI to allow Lisp arrays to be copied
+to and from from foreign memory with a minimum of overhead and
+boilerplate.
+
+Ordinarily, calling foreign functions with Lisp arrays involves
+arduous allocation and copying and re-copying and deallocation.  These
+macros are intended to simplify it to just a few lines of code.
+
+======
+
+FEATURES
+
+   - automatic foreign memory allocation and UNWIND-PROTECT'ed  
+     deallocation
+
+   - full control of whether the Lisp array is copied to the foreign
+     memory, and whether the foreign memory is copied back
+
+   - an internal set of copying routines to copy specialized
+     Lisp arrays to and from particular CFFI foreign memory types
+       eg (simple-array single-float) <----> :DOUBLE
+
+   - minimal consing on optimized  Lisp implementations like SBCL
+
+   - strings are supported, but are done by CFFI standard routines
+
+   - a COMPLEX keyword unpacks Lisp arrays into alternating real and
+     imaginary foreign space
+
+   - by default, Lisp arrays of type T (any element) are assumed.
+     This is slow, but should work in all cases.
+
+   - partial copying of Lisp arrays is controlled by START and END
+     keywords
+
+   - waaf-cffi-test is a test package for testing whether copying
+     to and from foreign memory works.
+
+The mappings that are possible are given in
+WAAF::*LISP-FFI-ARRAY-PAIRINGS*.  Additional to the mappings in
+WAAF::*LISP-FFI-ARRAY-PAIRINGS*, there are some synonym translations
+performed, converting Lisp WAAF:MACHINE-XXX types (see below) to normal Lisp
+types, and converting CFFI type :POINTER to the correct type of
+:UINTxx.
+
+
+The principal macros are 
+   WITH-ARRAY-AS-FOREIGN-POINTER
+    and
+   WITH-ARRAYS-AS-FOREIGN-POINTERS
+
+Additionally 
+
+  SBDEFINE-ALIEN-ROUTINE 
+
+allows SBCL style function invocation and 
+
+  WITH-LISP-VALUES-AS-FOREIGN-POINTERS  
+
+allows individual Lisp values to be placed into automatically
+freed foreign memory and bound to pointers.
+
+======
+
+EFFICIENCY
+
+On a highly optimized Lisp like SBCL using specialized arrays, these
+macros can copy large blocks of memory with no consing besides foreign
+pointer allocation (16 bytes per array per call).  On a PPC running
+SBCL it can copy about 160MB of floats to foreign memory and back per
+second.  The standard version of the code is about 3x slower, however,
+because the constant +safety-setting+ in waaf-cffi.Lisp is set to 1
+rather than 0.  It should be OK to set it to 0, though it might be
+good to try to catch errors at a higher safety before doing so.
+
+On less optimized Lisps, copying is at least an order of magnitude
+slower.
+
+The code compiles with a lot of optimization notes on SBCL, but they
+are mostly about mild integer/fixnum issues, or about compiling the
+inefficient generic array copiers.
+
+If the the Lisp array type is not specified by the USER when invoking
+the macro, then the copying routines default to slow generic ones.
+
+======
+
+THREAD SAFETY
+
+Nothing global is modified except at load time, so WAAF should be as
+thread safe as CFFI.
+
+======
+
+INTERNALS
+
+For each pair of Lisp type and CFFI-TYPE, a pair of copying functions
+is defined.  These functions are generated automatically by a reader
+macro from pairs in *LISP-FFI-ARRAY-PAIRINGS*.  
+
+At load time, a hash table is constructed mapping type pairs to
+backward and forward copying function pairs.
+
+Some of the copying functions are redundant, like distinct mappings of
+(UNSIGNED-BYTE 64) to :int64 and :longlong. This redundancy saves us
+the trouble of worrying which CFFI types are synonymous.
+
+Some of mappings may be hazardous. What happens when a (UNSIGNED-BYTE
+32) is crammed into a foreign :SHORT array with SAFETY=0?  Caveat
+macroexpander.
+
+When the user invokes the macro WITH-ARRAY-AS-FOREIGN-POINTER 
+with type information, the correct pair of copying functions
+is hardwired into the macro expansion.  If no pair exists for the
+types given, an error is produced.  Most sensible pairings should be
+covered.  
+
+
+======
+
+
+INSTALLATION
+
+CFFI and ADSF should be present on the system. Then just load the
+system in waaf-cffi.asd.  The system waaf-cffi-tests.asd
+contains tests, and documentation at top.
+
+
+Verified to work on:
+
+  SBCL-PPC-MAC
+  CCL-PPC-MAC
+  SBCL-X64-64-LINUX
+
+It uses only ordinary CFFI features, and obtains its typecasting
+information from CFFI, so it should work wherever CFFI works.
+
+
+
+
+================================================================
+
+Macro WITH-ARRAY-AS-FOREIGN-POINTER
+
+Macro that evaluates BODY code after copying one Lisp array into a block
+of foreign memory
+
+    1. A Lisp array is copied to foreign memory
+    2. A specified pointer variable is bound this block of foreign memory
+    3. BODY is evaluated, typically containing foreign calls to the pointer.
+    4. The foreign memory is copied back into the array by default, though
+       this may be disabled.
+    5. The foreign memory is deallocated inside an UNWIND-PROTECT.
+
+
+Usage:
+   
+   (WITH-ARRAY-AS-FOREIGN-POINTER
+       (ARRAY POINTER-VAR CFFI-FOREIGN-TYPE  
+        :COPY-TO-FOREIGN   T|NIL
+        :COPY-FROM-FOREIGN T|NIL 
+        :START NIL|index   
+        :END   NIL|index
+        :LISP-TYPE ELEMENT-TYPE-OF-LISP-ARRAY
+        :COMPLEX   T|NIL
+        :ENCODING  STRING-ENCODING)
+  
+    ;; body that uses block of foreign memory bound to pointer-var
+    )
+
+
+
+ ARRAY     is any Lisp array whose elements are to be passed to a foreign
+           function in a block of foreign memory
+ POINTER-VAR  is the name of a variable to which a pointer is to be bound,
+           containing the contents of ARRAY
+ CFFI-FOREIGN-TYPE is the type of the foreign memory, like :DOUBLE.  If :POINTER
+           is given, then it is translated to  :UINT32 or :UINT64.
+ COPY-TO-FOREIGN   specifies if the Lisp array is to be copied to foreign memory
+           before body is run.  It is T by default
+ COPY-FROM-FOREIGN specifies if the foreign memory is copied back into the Lisp array
+           after body is run.  It is T by default.
+ START and END is the range of elements to be copied into the foreign array,
+           which will be of size (- END START); END is 1 beyond the last index 
+           copied, like for the standard SUBSEQ function
+ LISP-TYPE is  the element type of the Lisp array.  Examples of LISP-TYPE
+           are FLOAT, DOUBLE, (UNSIGNED-BYTE 32), and T (the default). 
+           If LISP-TYPE is not T, the array is  assumed SIMPLE.  More restrictive 
+           types  (eg FLOAT and not T) are faster and cons less or not at all.
+           The Lisp type may also be one of WAAF:MACHINE-XXX described below.
+ COMPLEX   specifies whether the elements of the array are to be treated as 
+           complex numbers, so that each one is unpacked into two foreign
+           array slots, and the two slots are then combined when the
+           COPY-FROM-FOREIGN operation copies from foreign space to the Lisp array.
+ ENCODING  used only when CFFI-FOREIGN-TYPE is :STRING, and we punt to
+           CFFI's foreign string routines
+
+
+   
+String ARRAYs with  CFFI-FOREIGN-TYPE equal to :STRING are handled using 
+CFFI:FOREIGN-STRING-ALLOC CFFI:FOREIGN-STRING-TO-LISP, and the ENCODING
+that is optionally given (default ENCODING is :ASCII).
+
+Note that CFFI-FOREIGN-TYPE, LISP-TYPE, and COMPLEX are not variable at runtime.
+COPY-TO-FOREIGN, COPY-FROM-FOREIGN, START, and END may be variable at runtime.
+
+Example:
+
+  (LET ((U (MAKE-ARRAY 100 :ELEMENT-TYPE 'SINGLE-FLOAT :INITIAL-ELEMENT 1.0)))
+    ;;
+    (WITH-ARRAY-AS-FOREIGN-POINTER
+           (U PU :FLOAT 
+           :LISP-TYPE SINGLE-FLOAT ;; promise U is a single-float array
+           :START 2                ;; begin at index 2 of of Lisp array
+           :END   7                ;; last index used is 6
+           :COPY-TO-FOREIGN   T            ;; put contents of Lisp into foreign memory
+           :COPY-FROM-FOREIGN T)           ;; copy back from FFI space 
+         ;;
+         ;; at this point, PU is a foreign pointer containing data copied
+         ;; from the array, of type :FLOAT.
+
+         (SOME-FOREIGN-FUNCTION PU))
+       ;;
+       ;; at end, all foreign memory is deallocated, and U has been copied
+       ;; back from foreign space, but the 0th element of U is untouched
+       ;; because START was 1, not 0
+     )
+
+
+The options :START :END :COPY-TO-FOREIGN :COPY-FROM-FOREIGN are optional.  
+By default, :LISP-TYPE is T and any array can be given.
+
+
+================================================================
+
+Macro WITH-ARRAYS-AS-FOREIGN-POINTERS
+
+Plural version WITH-ARRAY-AS-FOREIGN-POINTER
+
+Usage:
+    
+  (WITH-ARRAYS-AS-FOREIGN-POINTERS 
+     ((ARRAY-1 POINTER-1 ...)
+      (ARRAY-2 POINTER-2 ...)
+      ...)
+    ;;
+    ;; body that uses POINTER-1 POINTER-1 ...
+
+is like
+
+   (WITH-ARRAY-AS-FOREIGN-POINTER (ARRAY-1 POINTER-1 ...)
+        (WITH-ARRAY-AS-FOREIGN-POINTER (ARRAY-2 POINTER-2 ...)
+           ;; body that uses POINTER-1 POINTER-1 ...
+         ))
+
+
+In practice, WITH-ARRAY-AS-FOREIGN-POINTER invokes
+WITH-ARRAYS-AS-FOREIGN-POINTERS.
+
+================================================================
+
+Macro SBDEFINE-ALIEN-ROUTINE
+
+
+SBCL style function definition for CFFI, permitting the use of :COPY
+:IN :OUT and :IN-OUT arguments that allow Lisp values to be turned
+into addresses passed as pointers.
+
+
+Usage
+
+    (SBDEFINE-ALIEN-ROUTINE 
+       (FOREIGN-FUNCTION-NAME-STRING    
+        LISP-FUNCTION-NAME-SYMBOL)        
+	;;
+       RETURN-TYPE-OF-FOREIGN-FUNCTION
+       ;; 
+       (ARGUMENT-NAME  ARGUMENT-TYPE  [:IN|:OUT|:COPY|:IN-OUT])
+       ...)
+
+
+RETURN-TYPE-OF-FOREIGN-FUNCTION and ARGUMENT-TYPE are CFFI types,
+including :STRING and :POINTER.  Also, types of the form (* SOMETHING)
+are recognized as :POINTER.
+
+
+Hence it is possible to call foreign functions that expect pointers
+with very little boilerplate.
+
+Each argument to the foreign function is one of
+
+  :IN     (the default) - the argument is just passed to the foreign function
+  :COPY   the argument is copied to foreign memory, and a POINTER to the
+          supplied value is passed to the foreign function
+  :OUT    nothing is passed by the user, but a POINTER is allocated
+          and the foreign function fills it, and the value is returned
+  :IN-OUT a combination of :COPY and :OUT.  A pointer is allocated,
+          the supplied user value is placed in foreign memory, and 
+          it's address is passed to the foreign function. Then
+          the value that the foreign function place in this same address
+          is returned.
+
+Arguments: the created function takes one argument for each :IN, :COPY,
+           and :IN-OUT term, but not for :OUT terms.
+
+Return values: the function returns its return value, plus one
+               value for each :OUT and :IN-OUT.
+
+
+Example:
+
+    (SBDEFINE-ALIEN-ROUTINE 
+       ("ForeignFunc"    ;; the foreign name
+        Lisp-func)         ;; the desired Lisp name
+       :INT ;; the return type for the function itself
+       ;; 
+       (N :INT) ;; this is :IN by default
+       (X :FLOAT :COPY)   ;; a POINTER to X is passed to ForeignFunc
+       (Y :DOUBLE :OUT)   ;; Y is not supplied, but a pointer 
+                          ;;   is given to ForeignFunc for it to fill,
+                          ;;   and this new value is returned.
+       (Z :FLOAT :IN-OUT) ;; Z is supplied, given to ForeignFunc as a pointer,
+                          ;; and is returned
+       (S :STRING)       ;; S is passed as a string in usual CFFI manner
+       (Q (* ANYTHING-GOES)) ;; Q is just a pointer
+       (R :POINTER))         ;; R is a pointer too
+
+ Now LISP-FUNC is called as
+
+     (LISP-FUNC N X Z S Q R)
+
+ and it returns
+
+    (VALUES  RETURNED-INT   Y-FROM-FOREIGN  Z-FROM-FOREIGN) 
+
+
+================================================================
+
+
+Macro WITH-LISP-VALUES-AS-FOREIGN-POINTERS 
+
+Macro that allocates individual units of foreign memory, places Lisp
+values them, binds the pointer to a user supplied variable, executes
+BODY, releases the memory, and returns (VALUES ....) for the new
+values in the foreign pointers, which may have been modified by
+foreign code in BODY.
+
+Usage:
+  
+    (WITH-LISP-VALUES-AS-FOREIGN-POINTERS
+       ((LISP-VALUE-1 POINTER-VAR-1 CFFI-TYPE-1
+           :COPY-TO-FOREIGN   T|NIL 
+	   :COPY-FROM-FOREIGN T|NIL)
+        (LISP-VALUE-2 POINTER-VAR-2 CFFI-TYPE-2 ..)
+        ...)
+	   
+       ;; body that uses pointers POINTER-VAR-1 POINTER-VAR-2
+       )
+        
+    
+
+Each variable to be bound is represented by
+
+    (LISP-VALUE POINTER-VAR CFFI-TYPE  :COPY-TO-FOREIGN T :COPY-FROM-FOREIGN T)
+
+where COPY-TO-FOREIGN and COPY-FROM keywords are optional and true by default.
+COPY-TO-FOREIGN determines whether the Lisp value is placed in the allocated
+foreign memory before invoking BODY, and COPY-FROM determines if the
+value of the foreign memory slot after BODY runs is returned in the
+macroexpanded form's VALUES.
+
+
+
+Example:
+
+   (WITH-LISP-VALUES-AS-FOREIGN-POINTERS 
+        ((X  PX :FLOAT)           ;; COPY-TO-FOREIGN and COPY-FROM-FOREIGN are T
+         (Y  PY :INT    :COPY-TO-FOREIGN   NIL)  ;; COPY-FROM-FOREIGN  is T
+         (99 PX :DOUBLE :COPY-FROM-FOREIGN NIL)) ;; COPY-TO-FOREIGN    is T
+      ;;
+      (DO-SOMETHING-WITH-POINTERS PX PY PZ))
+      ;; returns (VALUES (MEM-REF PX) (MEM-REF PY)) and frees PX,PY,PZ
+
+Lisp value X is placed into :FLOAT foreign memory which is bound to
+pointer PX.  
+
+For Y, an :INT pointer is created, but Y is not placed into it because
+COPY-TO-FOREIGN is NIL.  However, the value pointed to by PY is retrieved
+because COPY-FROM-FOREIGN is not changed from its default value of T.
+
+Lisp integer 99 is coerced into the :DOUBLE foreign slot
+pointed at by PZ, but it is not returned because :COPY-FROM-FOREIGN is NIL.
+
+This example returns (VALUES (MREF PX) (MREF PY)) because both PX and
+PY keep the default T value of COPY-FROM-FOREIGN.  The value placed into the
+99 foreign slot is not returned because COPY-FROM-FOREIGN is set to NIL.
+
+
+================================================================
+
+EXPORTED VARIABLES AND TYPES
+
+
+WAAF exports a number of variables and types to tell the user what
+Lisp types correspond to what foreign types.  This allows the user,
+for example, to make Lisp arrays of foreign values of a desired type.
+
+WAAF deduces the types using CFFI:FOREIGN-TYPE-SIZE
+
+The DEFTYPE types are:
+
+   MACHINE-POINTER
+   MACHINE-INT   MACHINE-UINT      MACHINE-UNSIGNED-INT
+   MACHINE-CHAR  MACHINE-UCHAR     MACHINE-UNSIGNED-CHAR
+   MACHINE-SHORT MACHINE-USHORT    MACHINE-UNSIGNED-SHORT
+   MACHINE-LONG  MACHINE-ULONG     MACHINE-UNSIGNED-LONG
+   MACHINE-LLONG MACHINE-ULLONG    MACHINE-UNSIGNED-LONG-LONG
+
+
+And the Lisp symbolic types, with values like (UNSIGNED-BYTE 32), are
+the following DEFCONSTANTs:
+
+   +LISP-POINTER-TYPE+   
+   +LISP-INT-TYPE+       +LISP-UINT-TYPE+        +LISP-UNSIGNED-INT-TYPE+
+   +LISP-CHAR-TYPE+      +LISP-UCHAR-TYPE+       +LISP-UNSIGNED-CHAR-TYPE+
+   +LISP-SHORT-TYPE+     +LISP-USHORT-TYPE+      +LISP-UNSIGNED-SHORT-TYPE+
+   +LISP-LONG-TYPE+      +LISP-ULONG-TYPE+       +LISP-UNSIGNED-LONG-TYPE+
+   +LISP-LLONG-TYPE+     +LISP-ULLONG-TYPE+      +LISP-UNSIGNED-LONG-LONG-TYPE+
+
+MACHINE-POINTER and +LISP-POINTER-TYPE+ are the integer types to which
+(cross fingers) pointers correspond to.
+
+
+Hence one can do
+
+   (MAKE-ARRAY 10 :ELEMENT-TYPE  'WAAF:MACHINE-SHORT)
+     or
+   (MAKE-ARRAY 10 :ELEMENT-TYPE #.WAAF:+LISP-SHORT-TYPE+)
+
+to make an array of elements corresponding to :SHORT
+
+================================================================
+
+NOTE ON ALLOCATING ARRAYS OF POINTERS IN LISP
+
+The following should, with luck, be a safe way of allocating vectors of
+pointers in Lisp:
+
+
+     (LET ((LISP-POINTER-VEC (MAKE-ARRAY 10 :ELEMENT-TYPE 'WAAF:MACHINE-POINTER)))
+       (WAAF:WITH-WITH-ARRAY-AS-FOREIGN-POINTER
+             (LISP-POINTER-VEC PTR :POINTER  :LISP-TYPE WAAF:MACHINE-POINTER)
+	   ;;
+           (SOME-FOREIGN-FUNCTION PTR)))
+
+
+With luck, PTR should be a foreign pointer pointing at foreign memory
+containing the values in LISP-POINTER-VEC as a foreign vector of pointers.
+
+
+The CFFI :POINTER in the above expression is a bit of a cheat, because
+it is converted to a :UINT32 or :UINT64 during macroexpansion of
+WAAF:WITH-WITH-ARRAY-AS-FOREIGN-POINTER.

@@ -1,0 +1,56 @@
+
+
+shellsort-jk package - a trivial shell sort than can be used as a non-consing,
+                       non-funcall'ing maco
+
+The shellsort is an unstable sort that is very simple, involves only swapping
+and comparison, and probably has a worst case time of N^(4/3).
+
+In practice, it seems faster on random data than the N log(N) heapsort
+of SBCL. One advantage is the ability to inline a search completely as a macro.
+
+A sort is abstracted as an operation on a enumerated series 0...N
+with two operations: PREDICATE and SWAPPING
+
+
+================================================================
+(defun shellsort-function (predicate swapper istart iend)
+  ...)
+
+
+The function SHELLSORT-FUNCTION takes PREDICATE and SWAPPING functions
+and inclusive starting and ending indices (so it is possible to sort a
+subsequence).
+
+Example:
+
+(defun test-shellsort-function (vec &key (istart 0) (iend nil))
+  (flet ((comparison (i j) (rotatef (aref vec i) (aref vec j)))
+	 (predicate (i j) (< (aref vec i) (aref vec j))))
+    (SHELLSORT-JK:SHELLSORT-FUNCTION
+	#'comparison
+	#'swapper
+	istart  (or iend (1- (length vec))))
+    vec))
+
+
+================================================================
+(defmacro shellsort-macro (predicate-expression swapper-expression
+                           istart iend ivar jvar)
+
+The macro SHELLSORT-MACO takes PREDICATE-EXPRESSION and SWAPPER-EXPRESSION,
+inclusive starting and ending indices ISTART and IEND, and variable
+nales IVAR,JVAR used in the predicate and swapper expressions.
+
+Example:
+
+(defun test-shellsort-macro (vec &key (istart 0) (iend nil))
+  (declare (type simple-vector vec))
+  (SHELLSORT-JK:SHELLSORT-MACRO
+    (< (aref vec i) (aref vec j))        ;; comparison expression
+    (rotatef (aref vec i) (aref vec j))  ;; swapper expression
+    istart                               ;; starting index, inclusive
+    (or iend (1- (length vec)))          ;; ending index, inclusive
+    i j)	   	 		 ;; variables in predicate and swapper
+    vec)
+	   
