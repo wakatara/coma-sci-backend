@@ -2,10 +2,11 @@
 
 (in-package small-body-identify)
 
+;; Commented out for Docker build - lparallel will be initialized at runtime instead
 ;; set four worker threads if a kernel is not set
-(eval-when (:load-toplevel)
-  (when (not lparallel:*kernel*)
-    (setf lparallel:*kernel* (lparallel:make-kernel 4))))
+;; (eval-when (:load-toplevel)
+;;   (when (not lparallel:*kernel*)
+;;     (setf lparallel:*kernel* (lparallel:make-kernel 4))))
 
 
 (defstruct candidate

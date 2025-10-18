@@ -1,0 +1,28 @@
+# External dependencies from Quicklisp
+# These are the packages that should be installed via Quicklisp/qlot
+
+# Web server and client
+github hunchentoot edicl/hunchentoot :latest
+github drakma edicl/drakma :latest
+
+# JSON support
+github yason yason :latest
+
+# Utilities
+github alexandria alexandria :latest
+github bordeaux-threads bordeaux-threads :latest
+github cl-ppcre cl-ppcre :latest
+github cl-fad cl-fad :latest
+
+# CFFI for foreign function interface
+github cffi cffi :latest
+
+# XML/HTML parsing
+github cxml cxml :latest
+github xmls xmls :latest
+
+# CSV parsing
+github fare-csv fare-csv :latest
+
+# MD5
+github md5 md5 :latest

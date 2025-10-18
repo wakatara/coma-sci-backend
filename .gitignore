@@ -1,6 +1,67 @@
+.env
+
+# Various lisp-y, fortran and c compile artifacts
 SYSTEM-DATA
 *.o
 *~
 #*
-*.fasl
 dynamic-libraries
+*.fasl
+*.fas
+*.lib
+*.x86f
+*.ufasl
+*.dfsl
+*.o
+*.so
+*.dylib
+*.a
+*.dx32fsl
+*.dx64fsl
+*.lx32fsl
+*.lx64fsl
+*.wx32fsl
+*.wx64fsl
+
+# ASDF cache
+.asdf-cache/
+
+# Quicklisp
+.quicklisp/
+quicklisp/
+.qlot/
+qlot/
+
+# SBCL
+.sbcl-cache/
+
+# Cache directories
+*-cache/
+cache/
+
+# Editor backup files
+*~
+*.bak
+.#*
+\#*\#
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+.claude
+
+# Build artifacts
+build/
+bin/
+
+# Log files
+*.log
+
+# Local configuration
+local-config.lisp

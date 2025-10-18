@@ -6,8 +6,10 @@
    #:parse-small-body-name
    #:fuzzy-match-common-name
    #:find-matching-common-names
-   #:get-body-by-id 
-   #:iterate-over-small-bodies))
+   #:get-body-by-id
+   #:iterate-over-small-bodies
+   #:load-all-small-body-data ; For runtime initialization
+   ))
 
 (in-package small-body-name)
 
@@ -298,6 +300,7 @@ AllCometEls.txt  has data like
   (build-common-name-and-id-hash) 
   (setf *small-body-names-loaded* t))
 
+;; Re-enabled for Docker build - data files are present in repository
 (eval-when (:load-toplevel)
   (when (not *small-body-names-loaded*)
     (load-all-small-body-data)))

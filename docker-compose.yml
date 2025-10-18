@@ -1,0 +1,46 @@
+services:
+  sci-backend:
+    platform: linux/x86_64
+    build:
+      context: . # Build from coma-backend-jtk directory
+      dockerfile: Dockerfile
+    image: sci-backend:latest
+    container_name: sci-backend
+    hostname: sci-backend
+    ports:
+      - 5054:5054
+    environment:
+      - COMA_SERVER_HOST=${COMA_SERVER_HOST}
+      - COMA_PORT=5054
+      - VIZQUERY_PROGRAM=${VIZQUERY_PROGRAM}
+      - VIZQUERY_SITE=${VIZQUERY_SITE}
+      - TERAPIX_DIRECTORY=${TERAPIX_DIRECTORY}
+      - LD_LIBRARY_PATH=/usr/local/lib
+    volumes:
+      # Named volume for sci-backend data (includes ASTORB from image + runtime FASL)
+      # Docker will initialize this volume with /data/support/sci-backend content from image
+      - sci-backend-data:/data/support/sci-backend
+      # Alter below diretory paths to reflect system you are spinning up on as FITS sources
+      # - /data/staging:/data/staging
+      # - /data/CDROMS/VALIDATED:/data/CDROMS/VALIDATED
+      # - /data/atlas/obj:/data/atlas/obj
+      # - /data/gemini:/data/gemini
+      # - /data2/Observing-Data/OBSERVATORIES/CFHT-MegaCam/CFHT_ARCHIVE:/data2/Observing-Data/OBSERVATORIES/CFHT-MegaCam/CFHT_ARCHIVE
+
+    restart: "unless-stopped"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5054/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    command: /usr/local/bin/coma-sci-backend
+
+volumes:
+  sci-backend-data:
+  # Named volume for persistent sci-backend data
+  # Initialized from image /data/support/sci-backend on first container start
+
+networks:
+  sci-backend:
+    driver: bridge

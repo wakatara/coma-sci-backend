@@ -15,9 +15,12 @@
 
 (in-package nrwavelets)
 
+;; Add /usr/local/lib to CFFI search path for Docker builds
+(pushnew #P"/usr/local/lib/" cffi:*foreign-library-directories* :test #'equal)
+
 (cffi:define-foreign-library libslalib
-  (:darwin (:or "nrwavelets.dylib"))
-  (:unix (:or "nrwavelets.so")))
+  (:darwin (:or "/usr/local/lib/nrwavelets.dylib" "nrwavelets.dylib"))
+  (:unix (:or "/usr/local/lib/nrwavelets.so" "nrwavelets.so")))
 
 (cffi:use-foreign-library libslalib)
 

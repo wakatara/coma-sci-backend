@@ -13,43 +13,30 @@
 (defparameter *astorb-data-dir* (namestring *astorb-data-dir-pathname*))
 
 
-;; the astorb file MUST have the MJD of the elements at the end
-(defun get-astorb-file-list ()
-  (mapcar
-   ;; add the basenames back because we remove them
-   (lambda (basename)
-     (format nil "~A/~A" *astorb-data-dir* basename))
-   (remove-if ;; remove any .fasl files
-    (lambda (file) (search ".fasl" file))
-    (sort  (mapcar 'file-io:file-minus-dir ;; look at only the basename, to be safe
-		   (mapcar 'namestring
-			   (append ;; look for both .dat.NNN  and .dat.NNN.gz where NNN=MJD
-			    (directory (format nil "~A/astorb.dat.*" *astorb-data-dir*))
-			    (directory (format nil "~A/astorb.dat.*.gz" *astorb-data-dir*)))))
-	   'string>))))
+;; Initialized to NIL for Docker build - will be populated at runtime when data is available
+(defparameter *astorb-file-list* nil)
 
-;; a list of all astorb files sorted so the latest is first
-(defparameter *astorb-file-list* (get-astorb-file-list))
+(defparameter *astorb-file* nil)
 
-(when (not *astorb-file-list*)
-  (format *standard-output*
-	  "No astorb files found.  Will try to download from
-~A
-into
-~S
-Please be patient.~%~%"
-	  *astorb-url* *astorb-data-dir*)
-  (loop while (not *astorb-file-list*)
-	for i from 1 to 3
-	do (format *standard-output* "Attempt ~A~%" i)
-	   (force-output *standard-output*)
-	   (retrieve-newest-astorb-file :verbose-stream *standard-output*)
-	   (setf *astorb-file-list* (get-astorb-file-list))))
-
-(defparameter *astorb-file* (first *astorb-file-list*))
-
-(when (not *astorb-file*)
-  (error "ASTORB: Fatal error.  Could not access or download astorb file for orbits."))
+;; Function to initialize astorb file list - called at runtime when data directory is available
+(defun initialize-astorb-file-list ()
+  "Initialize *astorb-file-list* and *astorb-file* from data directory"
+  (setf *astorb-file-list*
+        (ignore-errors
+          (mapcar
+           ;; add the basenames back because we remove them
+           (lambda (basename)
+             (format nil "~A/~A" *astorb-data-dir* basename))
+           (remove-if ;; remove any .fasl files
+            (lambda (file) (search ".fasl" file))
+            (sort  (mapcar 'file-io:file-minus-dir ;; look at only the basename, to be safe
+                           (mapcar 'namestring
+                                   (append ;; look for both .dat.NNN  and .dat.NNN.gz where NNN=MJD
+                                    (directory (format nil "~A/astorb.dat.*" *astorb-data-dir*))
+                                    (directory (format nil "~A/astorb.dat.*.gz" *astorb-data-dir*)))))
+                   'string>)))))
+  (setf *astorb-file* (first *astorb-file-list*))
+  *astorb-file*)
 
 (defparameter  *astorb-info-output-stream*
   (if (find-symbol "ASTORB-QUIET" :CL-USER)
@@ -76,14 +63,16 @@ Please be patient.~%~%"
 	      mjd-elements date))
     mjd-elements))
 
-(describe-astorb-file *astorb-file*)
-	 
-    
-  
+;; Commented out for Docker build - top-level call fails if data directory is empty
+;; This gets called later at runtime when data is available
+;; (describe-astorb-file *astorb-file*)
 
 
 
-(defparameter *read-astorb-on-load* t) ;; if NIL, read at first use
+
+
+
+(defparameter *read-astorb-on-load* nil) ;; if NIL, read at first use - CHANGED for Docker build
 (defvar *the-astorb* nil)
 
 
@@ -584,9 +573,10 @@ In both instances, both names are lowercased and have non-alphanumeric chars rem
     
 
 
-(eval-when (:load-toplevel)
-  (when *read-astorb-on-load*
-    (maybe-read-the-astorb)))
+;; Commented out for Docker build - data will be loaded at runtime instead
+;; (eval-when (:load-toplevel)
+;;   (when *read-astorb-on-load*
+;;     (maybe-read-the-astorb)))
 
 (defun get-the-astorb ()
   "Get the astorb, reading it if necessary."

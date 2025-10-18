@@ -52,6 +52,7 @@ Contain all astorb orbits, plus all comet orbits, in a single vector
   
     (length *orbit-element-vector*))
 
-(eval-when (:load-toplevel)
-  (initialize-orbit-elements))
+;; Commented out for Docker build - depends on ASTORB which is loaded at runtime
+;; (eval-when (:load-toplevel)
+;;   (initialize-orbit-elements))
 

@@ -242,12 +242,13 @@ by pushing :slalib-starlink or :slalib-iraf onto *features*
 ;; on both OSX and Linux x86-64, :long is 8-bytes, like Fortran ints,
 ;; at least using the method we use to compile the Fortran library
 (eval-when (:load-toplevel :compile-toplevel :execute)
-  (defparameter *slalib-fortran-int-type* 
+  (defparameter *slalib-fortran-int-type*
     (or #+(and (or sbcl abcl ccl) :x86-64) :long
 	#+(and sbcl darwin arm64) :long
+	#+(and sbcl linux arm64) :long
 	(error
-	 "You will have to figure out what slalib::*slalib-fortran-int-type* 
-is (:long or :int) for this Lisp implementation, and fix slalib.lisp 
+	 "You will have to figure out what slalib::*slalib-fortran-int-type*
+is (:long or :int) for this Lisp implementation, and fix slalib.lisp
 accordingly.")
     )))
 

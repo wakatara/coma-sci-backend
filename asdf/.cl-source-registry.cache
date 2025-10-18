@@ -1,5 +1,0 @@
-(:source-registry-cache
-  "asdf.asd"
-  "uiop/asdf-driver.asd"
-  "uiop/uiop.asd"
-  "tools/asdf-tools.asd")
