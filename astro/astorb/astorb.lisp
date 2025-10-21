@@ -568,7 +568,9 @@ In both instances, both names are lowercased and have non-alphanumeric chars rem
     (%test-astorb-on-juno *the-astorb*)
     (format t "########### Done reading astorb; creating fast-loading fasl    ##############~%")
     (force-output)
-    (make-astorb-fasl)
+    (make-astorb-fasl :fasl-base (format nil "~A-~A"
+                                         *astorb-file*
+                                         (uiop/os:implementation-identifier)))
     (format t "########### Done making fast-loading fasl ~A.fasl   #####~%" *fasl-base*)))
     
 
