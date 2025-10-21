@@ -11,8 +11,9 @@ RUN (ln -s /usr/lib/aarch64-linux-gnu/libfftw3.so /usr/lib/libfftw3.so || \
   ln -s /usr/lib/x86_64-linux-gnu/libfftw3f.so /usr/lib/libfftw3f.so || true) && \
   (ln -s /usr/lib/aarch64-linux-gnu/libfftw3l.so /usr/lib/libfftw3l.so || \
   ln -s /usr/lib/x86_64-linux-gnu/libfftw3l.so /usr/lib/libfftw3l.so || true)
-# Additional libraries from original dynamic-libraries (XPA, WCS)
-RUN apt-get install -y libxpa-dev libxpa1 xpa-tools wcslib-dev libwcs8
+# Additional libraries from original dynamic-libraries (WCS)
+# Note: XPA removed as it's only needed for ds9 image viewer integration (not used by coma-json-server)
+RUN apt-get install -y wcslib-dev libwcs8
 
 # ------------------------------------------------------------------
 # Build and install CFITSIO with reentrant (thread-safe) support
@@ -116,21 +117,20 @@ RUN mkdir -p /data/support/sci-backend/catalogs \
   chmod -R 755 /data
 
 # ------------------------------------------------------------------
-# Copy and build coma-backend-jtk Lisp application
+# Copy and build COMA Lisp application
 # ------------------------------------------------------------------
-WORKDIR /root/coma-backend-jtk
+WORKDIR /opt/lisp-lib
 
-# Copy the entire coma-backend-jtk source tree from current directory
-# Note: nrwavelets is present in this codebase but build step is commented out (extraneous)
+# Copy the entire source tree from current directory
 COPY . .
 
 # Set LISP_LIB environment variable (required by Jan's jk-datadir package)
-ENV LISP_LIB=/root/coma-backend-jtk
+ENV LISP_LIB=/opt/lisp-lib
 ENV LISP_LIB_DATADIR=/data/support/sci-backend
 
 # Build nrwavelets library from C source (Daubechies wavelets from Numerical Recipes)
 # This enables wavelet-based image filtering in imutils package
-WORKDIR /root/coma-backend-jtk/jlib/nrwavelets
+WORKDIR /opt/lisp-lib/jlib/nrwavelets
 RUN make && make install
 
 # Set library path so CFFI can find nrwavelets.so during build
@@ -155,39 +155,45 @@ RUN sbcl --non-interactive \
 
 # ------------------------------------------------------------------
 # Download ASTORB asteroid orbit database at build time
-# Docker named volume will be initialized with this content on first container start
-# FASL will be compiled at runtime and stored in the same volume for persistence
+# Store in /opt/astorb/ in the image, then docker-entrypoint.sh copies to volume
+# FASL will be compiled at runtime on the volume for persistence
 # ------------------------------------------------------------------
-WORKDIR /root/coma-backend-jtk
 RUN echo "Downloading latest ASTORB database from Lowell Observatory..." && \
-  mkdir -p /data/support/sci-backend/astorb && \
-  cd /data/support/sci-backend/astorb && \
+  mkdir -p /opt/astorb && \
+  cd /opt/astorb && \
   MJD=$((( $(date +%s) / 86400 ) + 40587 - 1)) && \
   echo "Using MJD: $MJD (Lowell is 1 day behind)" && \
   wget --timeout=60 --tries=3 -O astorb.dat.${MJD}.gz https://ftp.lowell.edu/pub/elgb/astorb.dat.gz && \
   echo "ASTORB download complete ($(du -h astorb.dat.${MJD}.gz | cut -f1))." && \
-  echo "ASTORB ready for Docker volume initialization" && \
+  echo "ASTORB stored in image at /opt/astorb/" && \
   ls -lh astorb.dat.${MJD}.gz
 
 # Build the coma-json-server executable with buildapp
 # First try to load with debugging to get backtrace if it fails
+# Use sbclrc.lisp for ASDF initialization (Jan's recommendation - Point #5)
 RUN sbcl --noinform --non-interactive \
+  --userinit /opt/lisp-lib/sbclrc.lisp \
   --load /root/quicklisp/setup.lisp \
-  --eval '(asdf:initialize-source-registry (quote (:source-registry (:tree "/root/coma-backend-jtk/") :inherit-configuration)))' \
-  --eval '(handler-bind ((error (lambda (c) (format t "~%~%ERROR: ~A~%~%BACKTRACE:~%" c) (sb-debug:print-backtrace :count 50) (sb-ext:exit :code 1)))) (asdf:load-system :coma-sci-backend))' \
+  --eval '(handler-bind ((error (lambda (c) (format t "~%~%ERROR: ~A~%~%BACKTRACE:~%" c) (sb-debug:print-backtrace :count 50) (sb-ext:exit :code 1)))) (asdf:load-system :coma-json-server))' \
   && echo "System loaded successfully!" \
   || (echo "Failed to load system - see backtrace above" && exit 1)
 
 # If loading succeeded, build with buildapp
 # Use --dynamic-space-size 4096 (4GB in megabytes) for ASTORB FASL compilation
-RUN buildapp --output /usr/local/bin/coma-sci-backend \
+RUN buildapp --output /usr/local/bin/coma-json-server \
   --dynamic-space-size 4096 \
-  --asdf-tree /root/coma-backend-jtk \
-  --load-system coma-sci-backend \
-  --entry coma-sci-backend:main
+  --asdf-tree /opt/lisp-lib \
+  --load-system coma-json-server \
+  --entry coma-json-server:main
 
 # Make executable
-RUN chmod +x /usr/local/bin/coma-sci-backend
+RUN chmod +x /usr/local/bin/coma-json-server
+
+# Create backwards-compatible wrapper script at /usr/local/bin/coma-sci-backend
+# This maintains compatibility with existing docker-compose.yml and documentation
+RUN echo '#!/bin/bash' > /usr/local/bin/coma-sci-backend && \
+  echo 'exec /usr/local/bin/coma-json-server "$@"' >> /usr/local/bin/coma-sci-backend && \
+  chmod +x /usr/local/bin/coma-sci-backend
 
 # Set working directory
 WORKDIR /root

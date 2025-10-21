@@ -123,7 +123,7 @@ When the server starts, `coma-sci-backend:main` performs runtime initialization:
 - `VIZQUERY_PROGRAM` - Path to vizquery program (CDS catalog access)
 - `VIZQUERY_SITE` - VizieR mirror site to use
 - `TERAPIX_DIRECTORY` - Directory for TERAPIX tools output
-- `LISP_LIB` - Path to coma-sci-backend source (default: /root/coma-backend-jtk)
+- `LISP_LIB` - Path to Lisp library source inside container (default: /opt/lisp-lib)
 - `LISP_LIB_DATADIR` - Path to runtime data directory (default: /data/support/sci-backend)
 - `LD_LIBRARY_PATH` - Should include `/usr/local/lib` for native libraries
 

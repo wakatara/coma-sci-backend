@@ -2,7 +2,7 @@ services:
   sci-backend:
     platform: linux/x86_64
     build:
-      context: . # Build from coma-backend-jtk directory
+      context: . # Build from current directory (coma-sci-backend)
       dockerfile: Dockerfile
     image: sci-backend:latest
     container_name: sci-backend
@@ -10,12 +10,17 @@ services:
     ports:
       - 5054:5054
     environment:
+      - ASTROLISP=yes
       - COMA_SERVER_HOST=${COMA_SERVER_HOST}
       - COMA_PORT=5054
-      - VIZQUERY_PROGRAM=${VIZQUERY_PROGRAM}
-      - VIZQUERY_SITE=${VIZQUERY_SITE}
-      - TERAPIX_DIRECTORY=${TERAPIX_DIRECTORY}
+      - VIZQUERY_PROGRAM=/usr/bin/vizquery
+      - VIZQUERY_SITE=cfa
+      - TERAPIX_DIRECTORY=/usr/local/bin
       - LD_LIBRARY_PATH=/usr/local/lib
+      - LISP_LIB=/opt/lisp-lib
+      - LISP_LIB_DATADIR=/data/support/sci-backend
+      - NCPU=4
+
     volumes:
       # Named volume for sci-backend data (includes ASTORB from image + runtime FASL)
       # Docker will initialize this volume with /data/support/sci-backend content from image
@@ -34,9 +39,10 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-    command: /usr/local/bin/coma-sci-backend
+    command: /usr/local/bin/coma-json-server
 
 volumes:
+  lisp-lib-data:
   sci-backend-data:
   # Named volume for persistent sci-backend data
   # Initialized from image /data/support/sci-backend on first container start

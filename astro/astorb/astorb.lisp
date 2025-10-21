@@ -559,19 +559,34 @@ In both instances, both names are lowercased and have non-alphanumeric chars rem
     (when (not (or *the-astorb*
 		   ;; if we can, set *the-astorb* using the fasl file
 		   (read-astorb-fasl)))
-      (format t "########### Reading astorb - it may take 5 minutes or more to read ########~%")
-      (format t "###########   a GZIP file and build fast-loading fasl file         ########~%")
-      (format t "########### It will then be fast until astorb file is updated      ########~%")
-    (force-output)
-    (setf *the-astorb* (read-astorb))
-    ;; verify that Juno has the correct location
-    (%test-astorb-on-juno *the-astorb*)
-    (format t "########### Done reading astorb; creating fast-loading fasl    ##############~%")
-    (force-output)
-    (make-astorb-fasl :fasl-base (format nil "~A-~A"
-                                         *astorb-file*
-                                         (uiop/os:implementation-identifier)))
-    (format t "########### Done making fast-loading fasl ~A.fasl   #####~%" *fasl-base*)))
+      (format t "~%")
+      (format t "================================================================================~%")
+      (format t "    ASTORB FIRST-TIME INITIALIZATION (This will take ~5 minutes)~%")
+      (format t "    Reading compressed GZIP file and compiling fast-loading FASL...~%")
+      (format t "    Subsequent startups will load the FASL in seconds!~%")
+      (format t "================================================================================~%")
+      (force-output)
+      (format t "~%[1/3] Reading ASTORB database from GZIP file...~%")
+      (force-output)
+      (setf *the-astorb* (read-astorb))
+      (format t "[2/3] Verifying ASTORB data (checking Juno position)...~%")
+      (force-output)
+      ;; verify that Juno has the correct location
+      (%test-astorb-on-juno *the-astorb*)
+      (format t "[3/3] Compiling FASL for fast loading on next startup...~%")
+      (force-output)
+      (make-astorb-fasl :fasl-base (format nil "~A-~A"
+                                           *astorb-file*
+                                           (uiop/os:implementation-identifier)))
+      (format t "~%")
+      (format t "================================================================================~%")
+      (format t "    ASTORB INITIALIZATION COMPLETE!~%")
+      (format t "    FASL compiled: ~A.fasl~%"
+              (format nil "~A-~A" *astorb-file* (uiop/os:implementation-identifier)))
+      (format t "    Next startup will be much faster!~%")
+      (format t "================================================================================~%")
+      (format t "~%")
+      (force-output)))
     
 
 
