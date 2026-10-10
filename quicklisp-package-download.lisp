@@ -14,7 +14,8 @@
     :salza2
     :trivial-gray-streams
     :flexi-streams
-    :lparallel))
+    :lparallel
+    :closer-mop))
 
 (load "quicklisp.lisp")
 
