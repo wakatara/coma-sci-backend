@@ -61,7 +61,7 @@
 	      (cond ((or (equalp extname "CHIP1")
 			 (equalp det-out1-chip 1))
 		     (make-instance 'vlt-fors2-e2v-chip1))
-		    ((or (equalp extname" CHIP2")
+		    ((or (equalp extname "CHIP2")
 			 (equalp det-out1-chip 2))
 		     (make-instance 'vlt-fors2-e2v-chip2))))))
 	  ;;
@@ -75,7 +75,7 @@
 		     (make-instance 'vlt-fors1-tek-chip1))
 		    ((or (equalp extname "CHIP2")
 			 (equalp det-out1-chip 2))
-		     (make-instance 'vlt-fors2-tek-chip2))))
+		     (make-instance 'vlt-fors1-tek-chip2))))
 	     (t  ;; the other chip we can't identify
 	      nil)))
 	  ;;
