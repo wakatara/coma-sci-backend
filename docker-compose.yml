@@ -5,8 +5,8 @@ services:
       context: . # Build from coma-backend directory
       dockerfile: Dockerfile
       args:
-         GET_ASTORB: ${GET_ASTORB} # if TRUE then retrieve and compile astorb in build stage
-         RUN_LISP_LISTENER: ${RUN_LISP_LISTENER} # open a Lisp REPL on COMA_PORT
+        GET_ASTORB: ${GET_ASTORB} # if TRUE then retrieve and compile astorb in build stage
+        RUN_LISP_LISTENER: ${RUN_LISP_LISTENER} # open a Lisp REPL on COMA_PORT
     image: sci-backend:latest
     container_name: sci-backend
     hostname: sci-backend
@@ -18,7 +18,7 @@ services:
     environment:
       - COMA_SERVER_HOST=${COMA_SERVER_HOST}
       - COMA_PORT=5054
-      - RUN_LISP_LISTENER=TRUE      
+      - RUN_LISP_LISTENER=TRUE
       - LISP_LISTENER_PORT=5055
       - VIZQUERY_PROGRAM=${VIZQUERY_PROGRAM}
       - VIZQUERY_SITE=${VIZQUERY_SITE}
@@ -29,6 +29,14 @@ services:
       # Docker will initialize this volume with /data/support/sci-backend content from image
       - sci-backend-data:/data/support/sci-backend
       # Alter below diretory paths to reflect system you are spinning up on as FITS sources
+      - /data/staging:/data/staging
+      - /data/CDROMS/VALIDATED:/data/CDROMS/VALIDATED:ro
+      - /data/atlas/obj:/data/atlas/obj:ro
+      - /data/gemini:/data/gemini:ro
+      - /data/cfht:/data/cfht:ro
+      - /data/data2/Observing-Data/OBSERVATORIES/CFHT-MegaCam/CFHT_ARCHIVE:/data/data2/Observing-Data/OBSERVATORIES/CFHT-MegaCam/CFHT_ARCHIVE:ro
+      - /data2/Observing-Data/HALE_BOPP/reduced:/data2/Observing-Data/HALE_BOPP/reduced:ro
+      - /data2/Observing-Data/OBSERVATORIES/HCT-HFOSC:/data2/Observing-Data/OBSERVATORIES/HCT-HFOSC:ro
       # - /data/staging:/data/staging
       # - /data/CDROMS/VALIDATED:/data/CDROMS/VALIDATED
       # - /data/atlas/obj:/data/atlas/obj
@@ -37,12 +45,14 @@ services:
 
     restart: "unless-stopped"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5054/health"]
+      test: ["CMD", "curl", "-sf", "http://localhost:5054/submit-json"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
+      start_period: 60s
     command: coma-json-server
+    networks:
+      - goma-api_coma-api
 
 volumes:
   sci-backend-data:
@@ -50,5 +60,9 @@ volumes:
   # Initialized from image /data/support/sci-backend on first container start
 
 networks:
-  sci-backend:
-    driver: bridge
+  goma-api_coma-api:
+    external: true
+
+# networks:
+#   sci-backend:
+#     driver: bridge
