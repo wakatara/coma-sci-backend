@@ -3,7 +3,7 @@
 (defpackage instrument-id
   (:use #:cl)
   (:export
-   #:instrument #:observatory #:instrument-observatory #:instrument-name 
+   #:instrument #:name #:observatory #:instrument-observatory #:instrument-name 
    #:imaging-instrument #:multichip #:onechip #:instrument
    #:fzipped-p ;; incomplete support - only some instruments
    #:instruments-combinable-p

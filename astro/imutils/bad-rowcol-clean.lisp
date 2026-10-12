@@ -222,7 +222,7 @@ SIGMA-COSMIC-GROW, MIN-COSMIC-FLUX are used to additionally flag cosmic rays."
 			     ;;(format t "Row ~A  D=~,3F REJ=~,3F~%" i (abs (- x q2)) (* quartile-reject q))
 			     (mark-bad-row i)))
 		;; other IF clause - no good points in F
-		(loop for i below ncols do (mark-bad-row i))))))
+		(loop for i below nrows do (mark-bad-row i))))))
 
       ;; mark bad columns
       (when columns
@@ -250,7 +250,7 @@ SIGMA-COSMIC-GROW, MIN-COSMIC-FLUX are used to additionally flag cosmic rays."
 			     ;;(format t "Col ~A  D=~,3F REJ=~,3F~%" i (abs (- x q2)) (* quartile-reject q))
 			     (mark-bad-col i)))
 		;; other IF clause - no good points in fvec
-		(loop for i below nrows do (mark-bad-col i))))))      
+		(loop for i below ncols do (mark-bad-col i))))))      
 
 
       ;; mark saturated pixels
