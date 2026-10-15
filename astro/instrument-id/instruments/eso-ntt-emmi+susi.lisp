@@ -191,7 +191,7 @@ is not 0 or 90.
    ((%nchips :initform 2)
     (%nexts  :initform 2)))
 ;; one chip from reduces version
-(defclass/inst eso-ntt-susi2/reduced-onechip  (%eso-ntt-susi2 %emmi-susi-reduced multichip)
+(defclass/inst eso-ntt-susi2/reduced-onechip  (%eso-ntt-susi2 %emmi-susi-reduced onechip)
    ((%nchips :initform 1)
     (%nexts  :initform 1)))
 
