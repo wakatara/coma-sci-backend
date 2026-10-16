@@ -124,7 +124,8 @@ WCS header dictionary
 (defun %calib-fit-wcs (json-resp fits-file &key extension wcs-catalog
 					     wcs-fit-norder
 					     redo-wcs-fit-p wcs-rms-max
-					     wcs-nstars-min)
+					     wcs-nstars-min
+					     wcs-allow-saturated)
 
   (block retblock
     (flet ((return-with-error (err-name err-desc)
@@ -158,12 +159,13 @@ WCS header dictionary
 
 	(multiple-value-bind (wcs nstars/err rmsfit)
 	    (bt-ignore-errors
-	     (terapix:do-nonlinear-astrometry fits-file
+	     (terapix:do-nonlinear-astrometry fits-file 
 	       :extension extension
 	       :nstars-min wcs-nstars-min
 	       :astref-catalog wcs-catalog
 	       :rms-max wcs-rms-max
-	       :distort-degrees wcs-fit-norder))
+	       :distort-degrees wcs-fit-norder
+	       :allow-saturated-stars wcs-allow-saturated))
 	  ;;
 	  (when (not wcs)
 	    (return-with-error

@@ -13,6 +13,8 @@
                  "WCS-NSTARS-MIN": 8,
                  "WCS-RMS-MAX": 0.5,  // arcsec
                  "WCS-FIT-NORDER": 1,  // order of fit (1=linear)
+                 "WCS-ALLOW-SATURATED": true, 
+
 
                  "PHOT-CALIB":true,
                  "PHOT-CATALOG":"refcat", // "refcat" "ps1" "ps1-stack" "sdss" - refcat is LOCAL
@@ -61,6 +63,7 @@
 	  (wcs-nstars-min (get-param "WCS-NSTARS-MIN" :default 8))
 	  (wcs-rms-max (get-param "WCS-RMS-MAX" :default 0.5))
 	  (wcs-fit-norder (get-param "WCS-FIT-NORDER" :default 1))
+	  (wcs-allow-saturated (get-param "WCS-ALLOW-SATURATED" :default T))
 	  ;;
 	  (phot-calib-p (get-param  "PHOT-CALIB" :default t))
 	  (phot-calib-catalog (get-param "PHOT-CATALOG" :default "refcat"))
@@ -151,11 +154,12 @@
 		    (%calib-fit-wcs
 		     json-resp fits-file
 		     :extension extension
-		     :wcs-catalog wcs-catalog
+		     :wcs-catalog wcs-catalog 
 		     :redo-wcs-fit-p redo-wcs-fit-p
 		     :wcs-rms-max wcs-rms-max
 		     :wcs-nstars-min wcs-nstars-min
-		     :wcs-fit-norder wcs-fit-norder))
+		     :wcs-fit-norder wcs-fit-norder
+		     :wcs-allow-saturated wcs-allow-saturated))
 		 (when (not jresp)
 		   (return-with-error
 		    "ERROR-IN-WCS"
