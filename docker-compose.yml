@@ -35,8 +35,8 @@ services:
       - /data/gemini:/data/gemini:ro
       - /data/cfht:/data/cfht:ro
       - /data/data2/Observing-Data/OBSERVATORIES/CFHT-MegaCam/CFHT_ARCHIVE:/data/data2/Observing-Data/OBSERVATORIES/CFHT-MegaCam/CFHT_ARCHIVE:ro
-      - /data2/Observing-Data/HALE_BOPP/reduced:/data2/Observing-Data/HALE_BOPP/reduced:ro
-      - /data2/Observing-Data/OBSERVATORIES/HCT-HFOSC:/data2/Observing-Data/OBSERVATORIES/HCT-HFOSC:ro
+      - /data/data2/Observing-Data/HALE_BOPP/reduced:/data2/Observing-Data/HALE_BOPP/reduced:ro
+      - /data/data2/Observing-Data/OBSERVATORIES/HCT-HFOSC:/data2/Observing-Data/OBSERVATORIES/HCT-HFOSC:ro
       # - /data/staging:/data/staging
       # - /data/CDROMS/VALIDATED:/data/CDROMS/VALIDATED
       # - /data/atlas/obj:/data/atlas/obj
