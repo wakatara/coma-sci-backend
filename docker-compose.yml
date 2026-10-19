@@ -23,6 +23,9 @@ services:
       - VIZQUERY_PROGRAM=${VIZQUERY_PROGRAM}
       - VIZQUERY_SITE=${VIZQUERY_SITE}
       - TERAPIX_DIRECTORY=${TERAPIX_DIRECTORY}
+      # ATLAS-RefCat2 for SCAMP/photometric calibration (refcat-search.lisp reads
+      # REFCAT_DIR); must match the container side of the Refcat2 mount below.
+      - REFCAT_DIR=/static-data/Refcat2
       - LD_LIBRARY_PATH=/usr/local/lib
     volumes:
       # Named volume for sci-backend data (includes ASTORB from image + runtime FASL)
@@ -30,6 +33,8 @@ services:
       - sci-backend-data:/data/support/sci-backend
       # Alter below diretory paths to reflect system you are spinning up on as FITS sources
       - /data/staging:/data/staging
+      # ATLAS-RefCat2 reference catalog (mag-bin subdirs 00_m_16, 16_m_17, ...)
+      - ${REFCAT_HOST_DIR:-/COMA/coma-prod/static-data/Refcat2}:/static-data/Refcat2:ro
       - /data/CDROMS/VALIDATED:/data/CDROMS/VALIDATED:ro
       - /data/atlas/obj:/data/atlas/obj:ro
       - /data/gemini:/data/gemini:ro
